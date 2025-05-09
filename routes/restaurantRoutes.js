@@ -1,6 +1,7 @@
 const express = require("express");
 
 const authMiddleware = require("../middlewares/authMiddleware");
+const adminMiddleware = require("../middlewares/adminMiddleware");
 const {
   createRestaurantController,
   getAllRestaurantController,
@@ -217,7 +218,7 @@ const router = express.Router();
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.post("/create", authMiddleware, createRestaurantController);
+router.post("/create", authMiddleware, adminMiddleware, createRestaurantController);
 
 /**
  * @swagger

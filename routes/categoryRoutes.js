@@ -1,6 +1,7 @@
 const express = require("express");
 
 const authMiddleware = require("../middlewares/authMiddleware");
+const adminMiddleware = require("../middlewares/adminMiddleware");
 const {
   createCatController,
   getAllCatController,
@@ -129,7 +130,7 @@ const router = express.Router();
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.post("/create", authMiddleware, createCatController);
+router.post("/create", authMiddleware, adminMiddleware, createCatController);
 
 /**
  * @swagger
@@ -290,7 +291,7 @@ router.get("/getAll", getAllCatController);
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.put("/update/:id", authMiddleware, updateCatController);
+router.put("/update/:id", authMiddleware, adminMiddleware, updateCatController);
 
 /**
  * @swagger
@@ -385,6 +386,6 @@ router.put("/update/:id", authMiddleware, updateCatController);
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.delete("/delete/:id", authMiddleware, deleteCatController);
+router.delete("/delete/:id", authMiddleware, adminMiddleware, deleteCatController);
 
 module.exports = router;

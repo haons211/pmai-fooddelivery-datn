@@ -141,12 +141,16 @@ const getFoodByRestaurantController = async (req, res) => {
 const updateFoodController = async (req, res) => {
   try {
     const foodID = req.params.id;
+    const loggedInUserId = req.body.id;
+    
     if (!foodID) {
       return res.status(400).send({
         success: false,
         message: "Please provide food ID",
       });
     }
+    
+    // Find food to update
     const food = await foodModal.findById(foodID);
     if (!food) {
       return res.status(404).send({
@@ -154,6 +158,23 @@ const updateFoodController = async (req, res) => {
         message: "Food not found",
       });
     }
+    
+    // Get restaurant to check ownership
+    const restaurant = await restaurantModel.findById(food.restaurant);
+    
+    // Additional ownership check at the controller level (even though we have middleware)
+    // This ensures that vendors can only update foods from their own restaurants
+    const loggedInUser = await userModel.findById(loggedInUserId);
+    const isAdmin = loggedInUser.usertype === "admin";
+    const isOwner = restaurant && restaurant.user && restaurant.user.toString() === loggedInUserId;
+    
+    if (!isAdmin && !isOwner) {
+      return res.status(403).send({
+        success: false,
+        message: "Unauthorized: You can only update foods from your own restaurant",
+      });
+    }
+    
     const {
       title,
       description,
@@ -163,9 +184,10 @@ const updateFoodController = async (req, res) => {
       category,
       code,
       isAvailable,
-      restaurant,
+      restaurant: restaurantId,
       rating,
     } = req.body;
+    
     const updatedFood = await foodModal.findByIdAndUpdate(
       foodID,
       {
@@ -177,11 +199,12 @@ const updateFoodController = async (req, res) => {
         category,
         code,
         isAvailable,
-        restaurant,
+        restaurant: restaurantId,
         rating,
       },
       { new: true }
     );
+    
     res.status(200).send({
       success: true,
       message: "Food Item Updated Successfully",
@@ -200,25 +223,46 @@ const updateFoodController = async (req, res) => {
 // DELETE FOOD
 const deleteFoodController = async (req, res) => {
   try {
-    const foodId = req.params.id;
-    if (!foodId) {
+    const foodID = req.params.id;
+    const loggedInUserId = req.body.id;
+    
+    if (!foodID) {
       return res.status(400).send({
         success: false,
         message: "Please provide food ID",
       });
     }
-    const food = await foodModal.findById(foodId);
+    
+    // Find food to delete
+    const food = await foodModal.findById(foodID);
     if (!food) {
       return res.status(404).send({
         success: false,
         message: "Food not found",
       });
     }
-    await foodModal.findByIdAndDelete(foodId);
+    
+    // Get restaurant to check ownership
+    const restaurant = await restaurantModel.findById(food.restaurant);
+    
+    // Additional ownership check at the controller level (even though we have middleware)
+    // This ensures that vendors can only delete foods from their own restaurants
+    const loggedInUser = await userModel.findById(loggedInUserId);
+    const isAdmin = loggedInUser.usertype === "admin";
+    const isOwner = restaurant && restaurant.user && restaurant.user.toString() === loggedInUserId;
+    
+    if (!isAdmin && !isOwner) {
+      return res.status(403).send({
+        success: false,
+        message: "Unauthorized: You can only delete foods from your own restaurant",
+      });
+    }
+    
+    await foodModal.findByIdAndDelete(foodID);
     res.status(200).send({
       success: true,
       message: "Food Item Deleted Successfully",
-      data: { foodId },
+      data: { foodId: foodID },
     });
   } catch (error) {
     console.log("Error in Delete Food API:", error);

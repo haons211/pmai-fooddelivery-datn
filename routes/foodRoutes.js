@@ -1,6 +1,8 @@
 const express = require("express");
 
 const authMiddleware = require("../middlewares/authMiddleware");
+const adminMiddleware = require("../middlewares/adminMiddleware");
+const vendorOrAdminMiddleware = require("../middlewares/vendorOrAdminMiddleware");
 const {
   createFoodController,
   getAllFoodsController,
@@ -11,7 +13,7 @@ const {
   placeOrderController,
   orderStatusController,
 } = require("../controllers/foodController");
-const adminMiddleware = require("../middlewares/adminMiddleware");
+const userModel = require("../models/userModel");
 
 const router = express.Router();
 
@@ -239,7 +241,8 @@ const router = express.Router();
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.post("/create", authMiddleware, createFoodController);
+
+router.post("/create", authMiddleware, vendorOrAdminMiddleware, createFoodController);
 
 /**
  * @swagger
@@ -569,7 +572,7 @@ router.get("/get-by-restaurant/:id", getFoodByRestaurantController);
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.put("/update/:id", authMiddleware, updateFoodController);
+router.put("/update/:id", authMiddleware, vendorOrAdminMiddleware, updateFoodController);
 
 /**
  * @swagger
@@ -664,7 +667,7 @@ router.put("/update/:id", authMiddleware, updateFoodController);
  *                   type: object
  *                   description: Error details (only in development mode)
  */
-router.delete("/delete/:id", authMiddleware, deleteFoodController);
+router.delete("/delete/:id", authMiddleware, vendorOrAdminMiddleware, deleteFoodController);
 
 /**
  * @swagger
