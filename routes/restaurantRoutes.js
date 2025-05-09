@@ -354,7 +354,7 @@ router.get("/get/:id", getRestaurantByIdController);
  *   delete:
  *     tags: [Restaurants]
  *     summary: Delete a restaurant
- *     description: Delete a specific restaurant by ID
+ *     description: Delete a specific restaurant by ID. Only the restaurant owner or an admin can perform this action.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -411,6 +411,19 @@ router.get("/get/:id", getRestaurantByIdController);
  *                 message:
  *                   type: string
  *                   example: Authentication failed
+ *       403:
+ *         description: Forbidden - User doesn't have permission to delete this restaurant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized: Only restaurant owner or admin can delete this restaurant"
  *       404:
  *         description: Restaurant not found
  *         content:

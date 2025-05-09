@@ -1,4 +1,5 @@
 const restaurantModel = require("../models/restaurantModel");
+const userModel = require("../models/userModel");
 
 // CREATE RESTAURANT
 const createRestaurantController = async (req, res) => {
@@ -115,6 +116,8 @@ const getRestaurantByIdController = async (req, res) => {
 const deleteRestaurantController = async (req, res) => {
   try {
     const restaurantId = req.params.id;
+    const loggedInUserId = req.body.id;
+    
     if (!restaurantId) {
       return res.status(400).send({
         success: false,
@@ -122,6 +125,7 @@ const deleteRestaurantController = async (req, res) => {
       });
     }
     
+    // Find restaurant to be deleted
     const restaurant = await restaurantModel.findById(restaurantId);
     if (!restaurant) {
       return res.status(404).send({
@@ -130,6 +134,27 @@ const deleteRestaurantController = async (req, res) => {
       });
     }
     
+    // Find logged in user to check their role
+    const loggedInUser = await userModel.findById(loggedInUserId);
+    if (!loggedInUser) {
+      return res.status(404).send({
+        success: false,
+        message: "Logged in user not found",
+      });
+    }
+    
+    // Check if user is restaurant owner or admin
+    const isOwner = restaurant.user && restaurant.user.toString() === loggedInUserId;
+    const isAdmin = loggedInUser.usertype === "admin";
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).send({
+        success: false,
+        message: "Unauthorized: Only restaurant owner or admin can delete this restaurant",
+      });
+    }
+    
+    // Proceed with deletion
     await restaurantModel.findByIdAndDelete(restaurantId);
     res.status(200).send({
       success: true,

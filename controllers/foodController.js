@@ -1,5 +1,7 @@
 const foodModal = require("../models/foodModal");
 const orderModel = require("../models/orderModel");
+const userModel = require("../models/userModel");
+const restaurantModel = require("../models/restaurantModel");
 
 // CREATE FOOD
 const createFoodController = async (req, res) => {
@@ -265,17 +267,20 @@ const placeOrderController = async (req, res) => {
   }
 };
 
-// CHANGE ORDER STATUS
+// ORDER STATUS CONTROLLER
 const orderStatusController = async (req, res) => {
   try {
-    const orderId = req.params.id;
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const loggedInUserId = req.body.id;
+    
+    // Validation
     if (!orderId) {
       return res.status(400).send({
         success: false,
-        message: "Please provide valid order ID",
+        message: "Please provide order ID",
       });
     }
-    const { status } = req.body;
     if (!status) {
       return res.status(400).send({
         success: false,
@@ -283,6 +288,7 @@ const orderStatusController = async (req, res) => {
       });
     }
     
+    // Find order
     const order = await orderModel.findById(orderId);
     if (!order) {
       return res.status(404).send({
@@ -291,6 +297,43 @@ const orderStatusController = async (req, res) => {
       });
     }
     
+    // Find logged in user to check their role
+    const loggedInUser = await userModel.findById(loggedInUserId);
+    if (!loggedInUser) {
+      return res.status(404).send({
+        success: false,
+        message: "Logged in user not found",
+      });
+    }
+    
+    // Access control based on role and relationship to the order
+    const isAdmin = loggedInUser.usertype === "admin";
+    const isVendor = loggedInUser.usertype === "vendor";
+    const isOrderOwner = order.user && order.user.toString() === loggedInUserId;
+    const isRestaurantOwner = order.restaurant && 
+                             await restaurantModel.exists({
+                               _id: order.restaurant,
+                               user: loggedInUserId
+                             });
+    
+    // Only admin, vendor who owns the restaurant, or in some cases the order owner can update status
+    if (!isAdmin && !isRestaurantOwner && !(isOrderOwner && status === "cancelled")) {
+      return res.status(403).send({
+        success: false,
+        message: "Unauthorized: You don't have permission to update this order's status",
+      });
+    }
+    
+    // Status transition rules
+    // Logic can be expanded based on allowed status transitions
+    if (isOrderOwner && status !== "cancelled") {
+      return res.status(403).send({
+        success: false,
+        message: "Customers can only cancel their own orders, not change to other statuses",
+      });
+    }
+    
+    // Proceed with status update
     const updatedOrder = await orderModel.findByIdAndUpdate(
       orderId,
       { status },

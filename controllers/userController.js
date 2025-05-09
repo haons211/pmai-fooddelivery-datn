@@ -34,8 +34,23 @@ const getUserController = async (req, res) => {
 // UPDATE USER
 const updateUserController = async (req, res) => {
   try {
-    // find user
-    const user = await userModel.findById(req.body.id);
+    const userId = req.body.id;
+    const updateUserId = req.body.updateUserId || userId; // If updateUserId not provided, default to self-update
+    
+    // Check if the user is trying to update someone else's profile
+    if (userId !== updateUserId) {
+      // Verify if the logged-in user is an admin
+      const loggedInUser = await userModel.findById(userId);
+      if (!loggedInUser || loggedInUser.usertype !== "admin") {
+        return res.status(403).send({
+          success: false,
+          message: "Unauthorized: Only admins can update other users' profiles",
+        });
+      }
+    }
+    
+    // find user to update
+    const user = await userModel.findById(updateUserId);
     //validation
     if (!user) {
       return res.status(404).send({
@@ -170,6 +185,9 @@ const resetPasswordController = async (req, res) => {
 const deleteProfileController = async (req, res) => {
   try {
     const userId = req.params.id;
+    const loggedInUserId = req.body.id;
+    
+    // Find the user to be deleted
     const user = await userModel.findById(userId);
     if (!user) {
       return res.status(404).send({
@@ -177,10 +195,31 @@ const deleteProfileController = async (req, res) => {
         message: "User Not Found",
       });
     }
+    
+    // Find the logged in user to check their role
+    const loggedInUser = await userModel.findById(loggedInUserId);
+    if (!loggedInUser) {
+      return res.status(404).send({
+        success: false,
+        message: "Logged in user not found",
+      });
+    }
+    
+    // Only allow deletion if:
+    // 1. The user is deleting their own account (userId === loggedInUserId)
+    // 2. The logged in user is an admin
+    if (userId !== loggedInUserId && loggedInUser.usertype !== "admin") {
+      return res.status(403).send({
+        success: false,
+        message: "Unauthorized: You can only delete your own account or you must be an admin",
+      });
+    }
+    
+    // Proceed with deletion
     await userModel.findByIdAndDelete(userId);
     return res.status(200).send({
       success: true,
-      message: "Your Account Has Been Deleted Successfully",
+      message: "Account Has Been Deleted Successfully",
       data: { userId },
     });
   } catch (error) {

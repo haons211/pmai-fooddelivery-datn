@@ -129,7 +129,7 @@ router.get("/getUser", authMiddleware, getUserController);
  *   put:
  *     tags: [Users]
  *     summary: Update user profile information
- *     description: Updates the profile information of the authenticated user
+ *     description: Updates the profile information of the authenticated user. Users can only update their own profile unless they are admins.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -143,8 +143,12 @@ router.get("/getUser", authMiddleware, getUserController);
  *             properties:
  *               id:
  *                 type: string
- *                 description: User ID
+ *                 description: ID of the authenticated user
  *                 example: 60d21b4967d0d8992e610c85
+ *               updateUserId:
+ *                 type: string
+ *                 description: ID of the user to update (only usable by admins)
+ *                 example: 60d21b4967d0d8992e610c86
  *               userName:
  *                 type: string
  *                 description: New user name
@@ -178,6 +182,19 @@ router.get("/getUser", authMiddleware, getUserController);
  *                   properties:
  *                     user:
  *                       $ref: '#/components/schemas/UserProfile'
+ *       403:
+ *         description: Unauthorized - User doesn't have permission to update this profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized: Only admins can update other users' profiles"
  *       404:
  *         description: User not found
  *         content:
@@ -415,7 +432,7 @@ router.post("/resetPassword", resetPasswordController);
  *   delete:
  *     tags: [Users]
  *     summary: Delete user account
- *     description: Permanently deletes a user account
+ *     description: Permanently deletes a user account. Only the account owner or an admin can perform this action.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -438,7 +455,7 @@ router.post("/resetPassword", resetPasswordController);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Your Account Has Been Deleted Successfully
+ *                   example: Account Has Been Deleted Successfully
  *                 data:
  *                   type: object
  *                   properties:
@@ -446,6 +463,19 @@ router.post("/resetPassword", resetPasswordController);
  *                       type: string
  *                       description: ID of the deleted user
  *                       example: 60d21b4967d0d8992e610c85
+ *       403:
+ *         description: Unauthorized - User doesn't have permission to delete this account
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized: You can only delete your own account or you must be an admin"
  *       404:
  *         description: User not found
  *         content:

@@ -772,7 +772,7 @@ router.post("/place-order", authMiddleware, placeOrderController);
  *   put:
  *     tags: [Foods]
  *     summary: Update order status
- *     description: Update the status of an existing order
+ *     description: Update the status of an existing order. Permissions are role-based - admins can update any order's status, restaurant owners can update orders from their restaurant, and customers can only cancel their own orders.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -793,7 +793,7 @@ router.post("/place-order", authMiddleware, placeOrderController);
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [preparing, ready, on the way, delivered]
+ *                 enum: [preparing, ready, on the way, delivered, cancelled]
  *                 description: New status of the order
  *                 example: on the way
  *     responses:
@@ -841,6 +841,19 @@ router.post("/place-order", authMiddleware, placeOrderController);
  *                 message:
  *                   type: string
  *                   example: Authentication failed
+ *       403:
+ *         description: Forbidden - User doesn't have permission to update this order's status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized: You don't have permission to update this order's status"
  *       404:
  *         description: Order not found
  *         content:
